@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if page.title %}{{ page.title }} - {% endif %}{{ site.title }}</title>
+    <meta name="description" content="{% if page.description %}{{ page.description }}{% else %}{{ site.description }}{% endif %}">
+    <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+    {% if page.custom_css %}
+    {% for css_file in page.custom_css %}
+    <link rel="stylesheet" href="{{ css_file | relative_url }}">
+    {% endfor %}
+    {% endif %}
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1><a href="{{ '/' | relative_url }}">{{ site.title }}</a></h1>
+            <nav>
+                <ul>
+                    <li><a href="{{ '/' | relative_url }}">Home</a></li>
+                    <li><a href="{{ '/models/' | relative_url }}">Models</a></li>
+                    <li><a href="https://github.com/{{ site.repository }}">GitHub</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        {{ content }}
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; {{ site.title }}. Powered by GitHub Pages and IPFS.</p>
+        </div>
+    </footer>
+
+    {% if page.custom_js %}
+    {% for js_file in page.custom_js %}
+    <script src="{{ js_file | relative_url }}" defer></script>
+    {% endfor %}
+    {% endif %}
+</body>
+</html> 

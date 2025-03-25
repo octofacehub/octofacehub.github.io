@@ -1,0 +1,52 @@
+# System files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Node modules (if you use any JS tools)
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Build and output directories
+_site/
+.sass-cache/
+.jekyll-cache/
+.jekyll-metadata
+
+# Environment specific files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Editor directories and files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS generated files
+._*
+.Spotlight-V100
+.Trashes
+
+# Cache
+.cache/

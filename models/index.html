@@ -1,0 +1,33 @@
+---
+layout: default
+title: Models Catalog
+custom_js:
+  - /assets/js/catalog.js
+---
+
+<div class="catalog-header">
+  <h1>Models Catalog</h1>
+  <p>Browse and discover LLM models shared by the community.</p>
+</div>
+
+<div class="search-filters">
+  <div class="search-box">
+    <input type="text" id="model-search" placeholder="Search models...">
+  </div>
+  
+  <div class="filter-dropdown">
+    <select id="tag-filter">
+      <option value="all">All Tags</option>
+    </select>
+  </div>
+</div>
+
+<div class="models-grid">
+  <div class="loading">
+    <p>Loading models...</p>
+  </div>
+</div>
+
+<ul class="pagination">
+  <!-- Pagination will be rendered by JavaScript -->
+</ul> 

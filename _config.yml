@@ -1,0 +1,24 @@
+title: OctoFaceHub
+description: A hub for LLM models on IPFS
+baseurl: ""
+url: "https://octofacehub.github.io"
+github_username: octofacehub
+repository: octofacehub/octofacehub.github.io
+
+# Build settings
+markdown: kramdown
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+  - .git
+  - README.md
+  - CNAME
