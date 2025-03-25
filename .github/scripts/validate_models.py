@@ -25,7 +25,7 @@ METADATA_SCHEMA = {
 
 def validate_metadata_files(base_dir="."):
     """Validate all metadata.json files in the models directory."""
-    metadata_files = glob.glob(os.path.join(base_dir, "models/*/metadata.json"))
+    metadata_files = glob.glob(os.path.join(base_dir, "models/*/*/metadata.json"))
     
     if not metadata_files:
         print("No model metadata files found.")
@@ -35,7 +35,9 @@ def validate_metadata_files(base_dir="."):
     
     for metadata_file in metadata_files:
         model_dir = os.path.dirname(metadata_file)
-        model_name = os.path.basename(model_dir)
+        model_path_parts = model_dir.split(os.path.sep)
+        github_username = model_path_parts[-2] if len(model_path_parts) >= 2 else "unknown"
+        model_name = model_path_parts[-1] if len(model_path_parts) >= 1 else "unknown"
         
         print(f"Validating {metadata_file}...")
         
@@ -49,7 +51,12 @@ def validate_metadata_files(base_dir="."):
             # Check for README.md
             readme_path = os.path.join(model_dir, "README.md")
             if not os.path.exists(readme_path):
-                print(f"Error: README.md missing for {model_name}")
+                print(f"Error: README.md missing for {github_username}/{model_name}")
+                all_valid = False
+            
+            # Check author matches directory
+            if metadata.get("author", "").lower() != github_username.lower():
+                print(f"Error: Author '{metadata.get('author')}' doesn't match directory name '{github_username}'")
                 all_valid = False
             
             # Check IPFS CID is valid by trying to access it
@@ -64,7 +71,7 @@ def validate_metadata_files(base_dir="."):
                 except requests.RequestException as e:
                     print(f"Warning: Could not verify IPFS CID {ipfs_cid}: {str(e)}")
             
-            print(f"✅ {model_name} is valid")
+            print(f"✅ {github_username}/{model_name} is valid")
             
         except json.JSONDecodeError:
             print(f"Error: {metadata_file} is not valid JSON")
@@ -81,17 +88,21 @@ def validate_metadata_files(base_dir="."):
 def validate_model_map(base_dir="."):
     """Validate that the model-map.json is up to date and contains all models."""
     try:
-        model_dirs = glob.glob(os.path.join(base_dir, "models/*/"))
-        model_names = [os.path.basename(os.path.dirname(d)) for d in model_dirs]
-        # Remove any dot directories like .github
-        model_names = [name for name in model_names if not name.startswith(".")]
+        # Get all model directories with the pattern models/username/modelname
+        model_dirs = glob.glob(os.path.join(base_dir, "models/*/*/"))
+        
+        # Extract username/modelname pairs
+        model_paths = []
+        for model_dir in model_dirs:
+            parts = model_dir.rstrip('/').split(os.path.sep)
+            if len(parts) >= 3:
+                username = parts[-2]
+                modelname = parts[-1]
+                model_paths.append(f"{username}/{modelname}")
         
         # Skip if no models
-        if not model_names:
+        if not model_paths:
             return True
-        
-        # Skip model-map.json if it exists in the model_names
-        model_names = [name for name in model_names if name != "model-map.json"]
         
         # Load the model map
         model_map_path = os.path.join(base_dir, "models/model-map.json")
@@ -106,14 +117,20 @@ def validate_model_map(base_dir="."):
             print("Error: models/model-map.json is missing the 'models' array")
             return False
         
-        # Get model names from the map
-        map_model_names = [model.get("name", "").lower().replace(" ", "-") for model in model_map["models"]]
+        # Get model paths from the map (username/modelname)
+        map_model_paths = []
+        for model in model_map["models"]:
+            path = model.get("path", "")
+            if path.startswith("models/"):
+                parts = path.split("/")
+                if len(parts) >= 3:
+                    map_model_paths.append(f"{parts[1]}/{parts[2]}")
         
         # Check if all models in directories are in the map
         missing_models = []
-        for model_name in model_names:
-            if model_name not in map_model_names:
-                missing_models.append(model_name)
+        for model_path in model_paths:
+            if model_path not in map_model_paths:
+                missing_models.append(model_path)
         
         if missing_models:
             print(f"Error: The following models are missing from models/model-map.json: {', '.join(missing_models)}")

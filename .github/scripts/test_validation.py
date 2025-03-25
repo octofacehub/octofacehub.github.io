@@ -40,7 +40,10 @@ class TestValidation(unittest.TestCase):
     def test_schema_validation(self):
         """Test schema validation."""
         # Test that valid metadata passes
-        model_dir = os.path.join(self.models_dir, "test-model")
+        username = "testuser"
+        user_dir = os.path.join(self.models_dir, username)
+        os.makedirs(user_dir)
+        model_dir = os.path.join(user_dir, "test-model")
         os.makedirs(model_dir)
         
         # Create a valid metadata.json
@@ -70,7 +73,7 @@ class TestValidation(unittest.TestCase):
             "ipfs_cid": "bafybeih2qqh6rfmgrrggvkwsve7yuru72tm66vmp2cc5q7nmhytnovq7dm",
             "size_mb": 10.5,
             "created_at": metadata["created_at"],
-            "path": "models/test-model"
+            "path": "models/testuser/test-model"
         })
         
         with open(os.path.join(self.models_dir, "model-map.json"), "w") as f:

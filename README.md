@@ -40,11 +40,16 @@ To add your model to OctoFaceHub, you have two options:
 2. Add your model to the `models` directory following this structure:
    ```
    models/
-   └── your-model-name/
-       ├── metadata.json
-       └── README.md
+   └── your-github-username/
+       └── your-model-name/
+           ├── metadata.json
+           └── README.md
    ```
 3. Create a pull request
+
+## Organization
+
+Models are organized by GitHub username to ensure ownership and access control. Only the original model submitter (matching GitHub username) can modify their models through pull requests.
 
 ## License
 
