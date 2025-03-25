@@ -1,0 +1,12 @@
+{
+  "name": "Sample Model",
+  "author": "example",
+  "description": "An example model to demonstrate the directory structure and metadata format",
+  "tags": ["example", "demo", "sample"],
+  "ipfs_cid": "bafybeih2qqh6rfmgrrggvkwsve7yuru72tm66vmp2cc5q7nmhytnovq7dm",
+  "size_mb": 42.5,
+  "created_at": "2023-07-31T12:00:00Z",
+  "license": "MIT",
+  "homepage": "https://github.com/example/sample-model",
+  "download_url": "https://w3s.link/ipfs/bafybeih2qqh6rfmgrrggvkwsve7yuru72tm66vmp2cc5q7nmhytnovq7dm"
+}

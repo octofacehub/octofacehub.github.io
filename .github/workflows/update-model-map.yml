@@ -1,0 +1,157 @@
+name: Update Model Map
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "models/**/*.json"
+
+jobs:
+  update-model-map:
+    runs-on: ubuntu-latest
+    # Runs independently from validation job
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Get PR author
+        id: get-pr-author
+        run: |
+          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+          echo "PR_AUTHOR=$PR_AUTHOR" >> $GITHUB_ENV
+          echo "PR author is $PR_AUTHOR"
+
+      - name: Get changed metadata files
+        id: changed-files
+        run: |
+          # Get all changed metadata.json files in the author's directory
+          METADATA_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep -E "^models/${{ env.PR_AUTHOR }}/.*/metadata.json$" || true)
+          echo "METADATA_FILES<<EOF" >> $GITHUB_ENV
+          echo "$METADATA_FILES" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+          echo "Changed metadata files:"
+          echo "$METADATA_FILES"
+
+      - name: Update model-map.json
+        run: |
+          import json
+          import os
+          import re
+
+          # Load model-map.json
+          model_map_path = "models/model-map.json"
+          if os.path.exists(model_map_path):
+              with open(model_map_path, "r") as f:
+                  try:
+                      model_map = json.load(f)
+                  except json.JSONDecodeError:
+                      model_map = {"models": []}
+          else:
+              model_map = {"models": []}
+
+          # Get the PR author
+          pr_author = os.environ.get("PR_AUTHOR")
+          if not pr_author:
+              print("❌ PR_AUTHOR environment variable not set")
+              exit(1)
+
+          # Get the list of changed metadata files
+          metadata_files = os.environ.get("METADATA_FILES", "").strip().split("\n")
+          metadata_files = [f for f in metadata_files if f]
+
+          if not metadata_files:
+              print("No metadata files changed in this PR")
+              exit(0)
+
+          # Process each metadata file
+          updated = False
+          for metadata_file in metadata_files:
+              print(f"Processing {metadata_file}")
+              
+              # Extract model directory from metadata path
+              model_dir_match = re.search(r'^(models/[^/]+/[^/]+)/', metadata_file)
+              if not model_dir_match:
+                  print(f"❌ Could not extract model directory from {metadata_file}")
+                  continue
+                  
+              model_dir = model_dir_match.group(1)
+              
+              # Load metadata
+              try:
+                  with open(metadata_file, "r") as f:
+                      metadata = json.load(f)
+              except (json.JSONDecodeError, FileNotFoundError) as e:
+                  print(f"❌ Error loading {metadata_file}: {str(e)}")
+                  continue
+              
+              # Create model entry
+              model_entry = {
+                  "name": metadata.get("name", ""),
+                  "author": metadata.get("author", ""),
+                  "description": metadata.get("description", ""),
+                  "tags": metadata.get("tags", []),
+                  "ipfs_cid": metadata.get("ipfs_cid", ""),
+                  "size_mb": metadata.get("size_mb", 0),
+                  "created_at": metadata.get("created_at", ""),
+                  "path": model_dir
+              }
+              
+              # Check if model already exists in map
+              existing_index = None
+              for i, model in enumerate(model_map["models"]):
+                  if model.get("path") == model_dir:
+                      existing_index = i
+                      break
+              
+              # Update or add the model entry
+              if existing_index is not None:
+                  model_map["models"][existing_index] = model_entry
+                  print(f"Updated existing entry for {model_dir}")
+              else:
+                  model_map["models"].append(model_entry)
+                  print(f"Added new entry for {model_dir}")
+              
+              updated = True
+
+          # Save updated model-map.json if changes were made
+          if updated:
+              with open(model_map_path, "w") as f:
+                  json.dump(model_map, f, indent=2)
+              print("✅ Successfully updated model-map.json")
+          else:
+              print("No changes made to model-map.json")
+        shell: python
+
+      - name: Commit changes if needed
+        id: commit
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+          if git diff --exit-code models/model-map.json; then
+            echo "No changes to commit"
+            echo "changes_made=false" >> $GITHUB_OUTPUT
+          else
+            git add models/model-map.json
+            git commit -m "Update model-map.json with models from ${{ env.PR_AUTHOR }}"
+            echo "changes_made=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Push changes
+        if: steps.commit.outputs.changes_made == 'true'
+        run: git push

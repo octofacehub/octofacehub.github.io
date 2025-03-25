@@ -49,7 +49,23 @@ To add your model to OctoFaceHub, you have two options:
 
 ## Organization
 
-Models are organized by GitHub username to ensure ownership and access control. Only the original model submitter (matching GitHub username) can modify their models through pull requests.
+Models are organized by GitHub username to ensure ownership and access control. Our permission model works as follows:
+
+1. **Username-based Directories**: Each GitHub user can add/modify models only within their own `models/username/` directory.
+
+2. **Automated Validation**: Pull requests are automatically validated to ensure users can only modify their own directories.
+
+3. **Automatic Updates**: When you add or update models, our GitHub Actions workflow will automatically update the model catalog.
+
+4. **Security**: Users cannot modify other users' model files or metadata.
+
+## Contributing
+
+We welcome contributions from all users! Simply:
+
+1. Upload your model to IPFS using our CLI tool
+2. Submit a PR with your model metadata
+3. Our automated systems will validate and process your submission
 
 ## License
 

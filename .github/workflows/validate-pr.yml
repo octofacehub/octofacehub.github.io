@@ -1,0 +1,108 @@
+name: Validate PR Changes
+
+on:
+  pull_request:
+    paths:
+      - "models/**"
+
+jobs:
+  validate-directory-access:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get PR author
+        id: get-pr-author
+        run: |
+          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+          echo "PR_AUTHOR=$PR_AUTHOR" >> $GITHUB_ENV
+          echo "PR author is $PR_AUTHOR"
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})
+          echo "CHANGED_FILES<<EOF" >> $GITHUB_ENV
+          echo "$CHANGED_FILES" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+      - name: Validate directory access
+        run: |
+          # Check if all changed files are within the allowed directory
+          INVALID_FILES=()
+          MODEL_MAP_CHANGED=false
+
+          while IFS= read -r file; do
+            # Skip empty lines
+            [ -z "$file" ] && continue
+            
+            # Check if file is model-map.json
+            if [[ "$file" == "models/model-map.json" ]]; then
+              MODEL_MAP_CHANGED=true
+              continue
+            fi
+            
+            # Check if file is within user's directory
+            if [[ "$file" =~ ^models/${PR_AUTHOR}/ ]]; then
+              echo "✅ $file is within allowed directory"
+            else
+              echo "❌ $file is outside allowed directory"
+              INVALID_FILES+=("$file")
+            fi
+          done <<< "$CHANGED_FILES"
+
+          # Fail if any files are outside allowed directory
+          if [ ${#INVALID_FILES[@]} -gt 0 ]; then
+            echo "::error::The following files are outside your allowed directory (models/${PR_AUTHOR}/):"
+            for file in "${INVALID_FILES[@]}"; do
+              echo "::error::  - $file"
+            done
+            exit 1
+          fi
+
+          echo "✅ All files are within allowed directory"
+
+      - name: Validate model-map.json changes
+        if: env.MODEL_MAP_CHANGED == 'true'
+        run: |
+          # Get the diff for model-map.json
+          git diff ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} -- models/model-map.json > model_map_diff.txt
+
+          # Check if changes only affect the author's entries
+          grep -v "^[+-][^+]" model_map_diff.txt > /dev/null || true
+
+          # Check only the content lines (remove diff markers)
+          INVALID_CHANGES=false
+
+          while IFS= read -r line; do
+            # Skip lines that don't add or remove content
+            if [[ ! "$line" =~ ^[+-][^+-] ]]; then
+              continue
+            fi
+            
+            # Skip lines with path belonging to PR author
+            if [[ "$line" =~ "models/${PR_AUTHOR}/" ]]; then
+              echo "✅ Valid change: $line"
+              continue
+            fi
+            
+            # Skip non-path lines that belong to a block with author's path
+            # This is complex and might need more sophisticated parsing in real implementation
+            
+            # Otherwise, flag as invalid
+            echo "❌ Invalid change: $line"
+            INVALID_CHANGES=true
+          done < model_map_diff.txt
+
+          if [ "$INVALID_CHANGES" = true ]; then
+            echo "::error::Changes to model-map.json affect entries outside your allowed directory"
+            exit 1
+          fi
+
+          echo "✅ All changes to model-map.json are valid"
