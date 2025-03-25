@@ -7,7 +7,7 @@ import tempfile
 import shutil
 import unittest
 from datetime import datetime
-from . import validate_models
+import validate_models
 
 
 class TestValidation(unittest.TestCase):

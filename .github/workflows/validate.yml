@@ -26,7 +26,8 @@ jobs:
       - name: Test validation script
         run: |
           cd .github/scripts
-          python -m unittest discover -v
+          # Use PYTHONPATH to make imports work properly
+          PYTHONPATH=$PYTHONPATH:. python -m unittest discover -v
 
       - name: Validate model metadata
         run: |
